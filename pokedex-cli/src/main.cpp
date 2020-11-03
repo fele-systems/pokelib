@@ -5,9 +5,9 @@
 int main(int argc, char** argv)
 {
 
-    if (argc != 2)
+    if (argc != 3)
     {
-        std::cout << "Invalid argument! Usage: pokedex-cli DATABASE_PATH" << std::endl;
+        std::cout << "Invalid argument! Usage: pokedex-cli DATABASE_PATH POKEMON_NAME" << std::endl;
     }
     else
     {
@@ -19,7 +19,12 @@ int main(int argc, char** argv)
             }
             else
             {
-                db.print_all_shit();
+                db.request_pokemon(argv[2]);
+                auto pkm = db.fetch_request();
+                if (pkm != nullptr)
+                    std::cout << std::to_string(*pkm) << std::endl;
+                else
+                    std::cout << "No results for: " << argv[2] << std::endl;
             }
     }
 

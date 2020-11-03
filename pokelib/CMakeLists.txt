@@ -1,6 +1,9 @@
 project(pokelib)
 # Get all source files in src
 file(GLOB SOURCES "src/cpp/*.cpp")
+
+message(STATUS ${SOURCES})
+
 add_library(pokelib ${SOURCES})
 
 target_link_libraries(pokelib -lsqlite3)
