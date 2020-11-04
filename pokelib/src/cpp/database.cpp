@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <cstdio>
 #include <cstring>
+#include <sstream>
 
 pokelib::Database::Database(const std::string& filename)
 {
@@ -31,6 +32,31 @@ bool pokelib::Database::good() const
 std::string pokelib::Database::get_error() const
 {
     return std::string{ sqlite3_errmsg(sqlite) };
+}
+
+void pokelib::Database::request_fuzzy_search(const char* value)
+{
+    std::stringstream ss;
+    ss << R"(SELECT dex_no,
+                   name,
+                   types,
+                   total_stats,
+                   total_hp,
+                   phys_atk,
+                   phys_def,
+                   spec_atk,
+                   spec_def,
+                   speed
+            FROM POKEMON )"
+        << "WHERE name LIKE '%" << value << "%'"
+        << " OR types LIKE '%" << value << "%';";
+    std::string buffer = ss.str();
+    std::cout << buffer << std::endl;
+    
+    if (sqlite3_prepare_v2(sqlite, buffer.c_str(), buffer.size(), &current_stmt, nullptr) != SQLITE_OK)
+    {
+        throw std::runtime_error{ sqlite3_errmsg(sqlite) };
+    }
 }
 
 void pokelib::Database::request_pokemon(const char* name)

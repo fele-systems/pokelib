@@ -24,6 +24,7 @@ namespace pokelib
         std::string get_error() const;
 
         void request_pokemon(const char* name);
+        void request_fuzzy_search(const char* value);
         std::shared_ptr<Pokemon> fetch_request();
     
         void print_all_shit();
