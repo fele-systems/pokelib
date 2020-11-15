@@ -1,12 +1,12 @@
 #include <queries.h>
 #include <database.h>
+#include <request.h>
 #include <iostream>
 #include <cxxopts.hpp>
 
-enum class DBOperation { FUZZY_SEARCH, NAME_SEARCH };
-
 int main(int argc, char** argv)
 {
+    using namespace pokelib;
     cxxopts::Options options("Pokedex-cli", "Command-line pokémon tools");
 
     options.add_options()
@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 
     options.parse_positional({ "database" });
     auto result = options.parse(argc, argv);
-    DBOperation operation;
+    PokemonRequest::Condition condition;
 
     if (result.count("help"))
     {
@@ -27,11 +27,15 @@ int main(int argc, char** argv)
     }
     else if (result.count("name"))
     {
-        operation = DBOperation::NAME_SEARCH;
+        condition.field = PokemonField::name;
+        condition.op = PokemonFieldOperator::equals;
+        condition.value = result["name"].as<std::string>();
     }
     else if (result.count("fuzzy"))
     {
-        operation = DBOperation::FUZZY_SEARCH;
+        condition.field = PokemonField::name;
+        condition.op = PokemonFieldOperator::contains;
+        condition.value = result["fuzzy"].as<std::string>();
     }
     else
     {
@@ -47,18 +51,8 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    switch (operation)
-    {
-    case DBOperation::NAME_SEARCH:
-        database.request_pokemon(result["name"].as<std::string>().c_str());
-        break;
-    case DBOperation::FUZZY_SEARCH:
-        database.request_fuzzy_search(result["fuzzy"].as<std::string>().c_str());
-        break;
-    default:
-        std::cout << "unkown error: Invalid operation (" << (int) operation << ")" << std::endl;
-        return EXIT_FAILURE;
-    }
+    database.request(PokemonRequest()
+        .add_condition(condition));
 
     auto pkm = database.fetch_request();
     while (pkm != nullptr)
