@@ -6,7 +6,7 @@ message(STATUS ${SOURCES})
 
 add_library(pokelib ${SOURCES})
 
-target_link_libraries(pokelib -lsqlite3)
+target_link_libraries(pokelib -lsqlite3 -lfmt)
 
 target_include_directories(pokelib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

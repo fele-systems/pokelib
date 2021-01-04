@@ -12,13 +12,23 @@ int main(int argc, char** argv)
     options.add_options()
         ("d,database", "Specify the database location", cxxopts::value<std::string>()->default_value("pokemon.db"))
         ("v,verbose", "Enable verbose logging")
-        ("n,name", "Search by a pokémon full name", cxxopts::value<std::string>())
-        ("f,fuzzy", "Search by name or type using fuzzy searching", cxxopts::value<std::string>())
-        ("h,help", "Print usage");
+        ("n,name", "Search by a pokémon full name")
+        ("f,fuzzy", "Search by name or type using fuzzy searching")
+        ("t,type", "Get type effectiveness")
+        ("h,help", "Print usage")
+        ("INPUT", "Positional arguments: values used depending on the requested operation",
+            cxxopts::value<std::vector<std::string>>())
+        ;
 
-    options.parse_positional({ "database" });
+    options.parse_positional({ "INPUT" });
     auto result = options.parse(argc, argv);
     PokemonRequest::Condition condition;
+    if (!result.count("INPUT"))
+    {
+        std::cout << "Missing input values" << std::endl;
+        return EXIT_FAILURE;
+    }
+    auto input = result["INPUT"].as<std::vector<std::string>>();
 
     if (result.count("help"))
     {
@@ -29,13 +39,28 @@ int main(int argc, char** argv)
     {
         condition.field = PokemonField::name;
         condition.op = PokemonFieldOperator::equals;
-        condition.value = result["name"].as<std::string>();
+        condition.value = input[0];
     }
     else if (result.count("fuzzy"))
     {
         condition.field = PokemonField::name;
         condition.op = PokemonFieldOperator::contains;
-        condition.value = result["fuzzy"].as<std::string>();
+        condition.value = input[0];
+    }
+    else if (result.count("type"))
+    {
+        pokelib::Database database{ result["database"].as<std::string>() };
+        if (!database.good())
+        {
+            std::cout << database.get_error() << std::endl;
+            return EXIT_FAILURE;
+        }
+        auto atk = database.get_type_from_name(input[0].c_str());
+        auto def = database.get_type_from_name(input[1].c_str());
+        
+        auto res = get_affinity(atk, def);
+        std::cout << res << std::endl;
+        return EXIT_SUCCESS;
     }
     else
     {

@@ -1,0 +1,2 @@
+# Break lines from pokemon_pokedex_entries.csv
+awk BEGIN { FS=";";id=1 } { for(i=2;i<NF;i++) { p=index($i,")"); print id++ ";" $1 ";" substr($i,2,p-2) ";" substr($i,p+1) } }

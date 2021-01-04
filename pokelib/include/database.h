@@ -7,6 +7,7 @@
 #include <sqlite3.h>
 #include <pokemon.h>
 #include <stdexcept>
+#include <pkm_type.h>
 
 namespace pokelib
 {
@@ -27,9 +28,14 @@ namespace pokelib
 
         template<typename RequestType>
         void request(RequestType& r);
+
         void request_pokemon(const char* name);
         void request_fuzzy_search(const char* value);
+
         std::shared_ptr<Pokemon> fetch_request();
+
+        PokemonType get_type_from_name(const char* name);
+        std::string get_type_name(PokemonType type);
     
         void print_all_shit();
     private:
@@ -49,6 +55,7 @@ namespace pokelib
             throw std::runtime_error{ sqlite3_errmsg(sqlite) };
         }
     }
+
 }
 
 #endif

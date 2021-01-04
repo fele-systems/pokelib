@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstring>
 #include <sstream>
+#include <fmt/core.h>
 
 pokelib::Database::Database(const std::string& filename)
 {
@@ -136,34 +137,64 @@ std::shared_ptr<pokelib::Pokemon> pokelib::Database::fetch_request()
        
 }
 
-void pokelib::Database::print_all_shit()
+pokelib::PokemonType pokelib::Database::get_type_from_name(const char* name)
 {
-    assert(good());
-
-    char* error = nullptr;
-    auto rc = sqlite3_exec(sqlite, "SELECT * FROM POKEMON;", [](void*, int argc, char** argv, char** argn)
-    {
-        for (int i = 0; i < argc; i++)
-        {
-            std::cout << argn[i] << " = ";
-            if (argv[i])
-                std::cout << argv[i] << "] ";
-            else
-                std::cout << "NULL] ";
-
-        }
-        std::cout << std::endl;
-        return 0;
-        
-    }, nullptr, &error);
+    std::string query = fmt::format(R"(
+        SELECT type_id
+        FROM PokemonType
+        WHERE LOWER(name_en) = LOWER('{}');)", name);
+    std::cout << "Query: " << query << std::endl;
     
-    if (rc != SQLITE_OK)
+    if (sqlite3_prepare_v2(sqlite, query.data(), query.size(), &current_stmt, nullptr) != SQLITE_OK)
     {
-        std::string error_str = error;
-        sqlite3_free(error);
-        throw std::runtime_error { error_str };
-    } 
+        throw std::runtime_error{ sqlite3_errmsg(sqlite) };
+    }
+    
+    auto rc = sqlite3_step(current_stmt);
+    if (rc == SQLITE_ROW)
+    {
+        assert(sqlite3_column_type(current_stmt, 0) == SQLITE_INTEGER);
+        return static_cast<PokemonType>( sqlite3_column_int(current_stmt, 0) );
+    }
+    else if (rc == SQLITE_DONE)
+    {
+        throw std::runtime_error { "The requested type does not exists" };
+    }
+    else
+    {
+        throw std::runtime_error{ "Unexpected return code from database" };
+    }
 }
+
+std::string pokelib::Database::get_type_name(pokelib::PokemonType type)
+{
+    std::string query = fmt::format(R"(
+        SELECT name_en
+        FROM PokemonType
+        WHERE type_id = {};)", static_cast<int>(type));
+    std::cout << "Query: " << query << std::endl;
+    
+    if (sqlite3_prepare_v2(sqlite, query.data(), query.size(), &current_stmt, nullptr) != SQLITE_OK)
+    {
+        throw std::runtime_error{ sqlite3_errmsg(sqlite) };
+    }
+    
+    auto rc = sqlite3_step(current_stmt);
+    if (rc == SQLITE_ROW)
+    {
+        assert(sqlite3_column_type(current_stmt, 0) == SQLITE_TEXT);
+        return std::string{ (const char*) sqlite3_column_text(current_stmt, 0), (size_t) sqlite3_column_bytes(current_stmt, 0) };
+    }
+    else if (rc == SQLITE_DONE)
+    {
+        throw std::runtime_error { "The requested type does not exists" };
+    }
+    else
+    {
+        throw std::runtime_error{ "Unexpected return code from database" };
+    }
+}
+
 
 
 
