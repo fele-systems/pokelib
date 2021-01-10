@@ -9,127 +9,196 @@
 #include <sstream>
 #include <fmt/core.h>
 
-pokelib::Database::Database(const std::string& filename)
+pokelib::PokeDex::PokeDex(const std::string& filename)
 {
     reload(filename);
 }
 
-pokelib::Database::~Database()
+pokelib::PokeDex::~PokeDex()
 {
     if (sqlite != nullptr)
         sqlite3_close(sqlite);
 }
 
-void pokelib::Database::reload(const std::string& filename)
+void pokelib::PokeDex::reload(const std::string& filename)
 {
     open_code = sqlite3_open(filename.c_str(), &sqlite);
 }
 
-bool pokelib::Database::good() const
+bool pokelib::PokeDex::good() const
 {
     return open_code == 0;
 }
 
-std::string pokelib::Database::get_error() const
+std::string pokelib::PokeDex::get_error() const
 {
     return std::string{ sqlite3_errmsg(sqlite) };
 }
 
-void pokelib::Database::request_fuzzy_search(const char* value)
+
+pokelib::DexPokemon pokelib::PokeDex::pokemon(const std::string& name)
 {
     std::stringstream ss;
-    ss << R"(SELECT dex_no,
-                   name,
-                   types,
-                   total_stats,
-                   total_hp,
-                   phys_atk,
-                   phys_def,
-                   spec_atk,
-                   spec_def,
-                   speed
-            FROM POKEMON )"
-        << "WHERE name LIKE '%" << value << "%'"
-        << " OR types LIKE '%" << value << "%';";
-    std::string buffer = ss.str();
-    std::cout << buffer << std::endl;
+    ss << R"(SELECT pkm.pkm_id,
+                    pkm.national_dex_no,
+                    pkm.name,
+                    type1.name_en,
+                    type2.name_en,
+                    pkm.total_hp,
+                    pkm.phys_atk,
+                    pkm.phys_def,
+                    pkm.spec_atk,
+                    pkm.spec_def,
+                    pkm.speed
+            FROM Pokemon pkm INNER JOIN PokemonType type1 ON pkm.ptype = type1.type_id
+                             LEFT  JOIN PokemonType type2 ON pkm.stype = type2.type_id  )"
+        << "WHERE name = '" << name << "'";
+    std::string query_str = ss.str();
     
-    if (sqlite3_prepare_v2(sqlite, buffer.c_str(), buffer.size(), &current_stmt, nullptr) != SQLITE_OK)
+    if (sqlite3_prepare_v2(sqlite, query_str.c_str(), query_str.size(), &current_stmt, nullptr) != SQLITE_OK)
     {
         throw std::runtime_error{ sqlite3_errmsg(sqlite) };
     }
+
+    auto result = next_pokemon_from_statement();
+    if (result.second)
+    {
+        return result.first;
+    }
+    else
+    {
+        throw std::runtime_error { "No pokémon was found with requested name" };
+    }
 }
 
-void pokelib::Database::request_pokemon(const char* name)
+std::vector<pokelib::DexPokemon> pokelib::PokeDex::search_pokemon(std::string value, Field fields)
 {
-    const char* fmt = R"(
-            SELECT dex_no,
-                   name,
-                   types,
-                   total_stats,
-                   total_hp,
-                   phys_atk,
-                   phys_def,
-                   spec_atk,
-                   spec_def,
-                   speed
-            FROM POKEMON
-            WHERE name = '%s';)";
-    size_t buff_size = std::strlen(fmt) + std::strlen(name) + 1;
-    std::vector<char> buffer(buff_size, '\0');
-    auto written_bytes = size_t(snprintf(buffer.data(), buffer.size(), fmt, name));
-    std::cout << "Written: " << written_bytes << "; Buff size: " << buffer.size() << std::endl;
-    std::cout << "Query: " << buffer.data() << std::endl;
-    assert(written_bytes == buffer.size() - 3); // Minus 3 cuz %s will be replaced
+    std::stringstream ss;
+    ss << R"(SELECT pkm.pkm_id,
+                    pkm.national_dex_no,
+                    pkm.name,
+                    type1.name_en,
+                    type2.name_en,
+                    pkm.total_hp,
+                    pkm.phys_atk,
+                    pkm.phys_def,
+                    pkm.spec_atk,
+                    pkm.spec_def,
+                    pkm.speed
+            FROM Pokemon pkm INNER JOIN PokemonType type1 ON pkm.ptype = type1.type_id
+                             LEFT  JOIN PokemonType type2 ON pkm.stype = type2.type_id
+            WHERE)";
+    std::transform(value.begin(), value.end(), value.begin(), [](char ch)
+    {
+        if (ch == '*')
+            return '%';
+        else
+            return ch;
+    });
+
+    bool first = true;
+    if ((fields & Field::name) == Field::name)
+    {
+        ss << " pkm.name LIKE '" << value << "'";
+        first = false;
+        fields ^ Field::name;
+    }
+
+    if ((fields & Field::dex_number) == Field::dex_number)
+    {
+        if (!first)
+            ss << " OR ";
+        ss << " CAST(pkm.national_dex_no AS VARCHAR(4)) LIKE '" << value << "'";
+        first = false;
+        fields ^ Field::name;
+    }
     
-    if (sqlite3_prepare_v2(sqlite, buffer.data(), buffer.size(), &current_stmt, nullptr) != SQLITE_OK)
+    if ((fields & Field::type0) == Field::type0)
+    {
+        if (!first)
+            ss << " OR ";
+        ss << " type1.name_en LIKE '" << value << "'";
+        first = false;
+        fields ^ Field::name;
+    }
+
+    if ((fields & Field::type1) == Field::type1)
+    {
+        if (!first)
+            ss << " OR ";
+        ss << " type2.name_en LIKE '" << value << "'";
+        first = false;
+        fields ^ Field::name;
+    }
+    if (int(fields) == 0)
+        throw std::runtime_error { std::string("Invalid flags detected. Resulting fields flag: ") + std::to_string((int) fields) };
+    std::string query_str = ss.str();
+    std::cout << query_str << std::endl;
+    
+    if (sqlite3_prepare_v2(sqlite, query_str.c_str(), query_str.size(), &current_stmt, nullptr) != SQLITE_OK)
     {
         throw std::runtime_error{ sqlite3_errmsg(sqlite) };
     }
+    
+    std::vector<DexPokemon> results;
+    auto result = next_pokemon_from_statement();
+    while (result.second)
+    {
+        results.push_back(result.first);
+        result = next_pokemon_from_statement();
+    }
+
+    return results;
 }
 
-std::shared_ptr<pokelib::Pokemon> pokelib::Database::fetch_request()
+std::pair<pokelib::DexPokemon, bool> pokelib::PokeDex::next_pokemon_from_statement()
 {
     auto rc = sqlite3_step(current_stmt);
     switch (rc)
     {
     case SQLITE_DONE:
-        return nullptr;
+        return std::make_pair(DexPokemon{}, false);
     case SQLITE_ROW:
     {
-        auto pkm = std::make_shared<Pokemon>();
-    
+        DexPokemon pkm;
+
         assert(sqlite3_column_type(current_stmt, 0) == SQLITE_INTEGER);
-        pkm->dex_no = sqlite3_column_int(current_stmt, 0);
+        pkm.pkm_id = sqlite3_column_int(current_stmt, 0);
         
-        assert(sqlite3_column_type(current_stmt, 1) == SQLITE_TEXT);
-        pkm->name = std::string{ (const char*) sqlite3_column_text(current_stmt, 1), (size_t) sqlite3_column_bytes(current_stmt, 1) };
+        assert(sqlite3_column_type(current_stmt, 1) == SQLITE_INTEGER);
+        pkm.national_dex_no = sqlite3_column_int(current_stmt, 1);
 
         assert(sqlite3_column_type(current_stmt, 2) == SQLITE_TEXT);
-        pkm->types = std::string{ (const char*) sqlite3_column_text(current_stmt, 2), (size_t) sqlite3_column_bytes(current_stmt, 2) };
-        
-        assert(sqlite3_column_type(current_stmt, 3) == SQLITE_INTEGER);
-        pkm->total_stats = sqlite3_column_int(current_stmt, 3);       
+        pkm.name = std::string{ (const char*) sqlite3_column_text(current_stmt, 2), (size_t) sqlite3_column_bytes(current_stmt, 2) };
 
-        assert(sqlite3_column_type(current_stmt, 4) == SQLITE_INTEGER);
-        pkm->total_hp = sqlite3_column_int(current_stmt, 4);       
+        assert(sqlite3_column_type(current_stmt, 3) == SQLITE_TEXT);
+        pkm.ptype = std::string{ (const char*) sqlite3_column_text(current_stmt, 3), (size_t) sqlite3_column_bytes(current_stmt, 3) };
+
+        if (sqlite3_column_type(current_stmt, 4) != SQLITE_NULL)
+        {
+            assert(sqlite3_column_type(current_stmt, 4) == SQLITE_TEXT);
+            pkm.stype = std::string{ (const char*) sqlite3_column_text(current_stmt, 4), (size_t) sqlite3_column_bytes(current_stmt, 4) };
+        }
 
         assert(sqlite3_column_type(current_stmt, 5) == SQLITE_INTEGER);
-        pkm->phys_atk = sqlite3_column_int(current_stmt, 5);       
+        pkm.total_hp = sqlite3_column_int(current_stmt, 5);       
 
         assert(sqlite3_column_type(current_stmt, 6) == SQLITE_INTEGER);
-        pkm->phys_def = sqlite3_column_int(current_stmt, 6);       
-    
-        assert(sqlite3_column_type(current_stmt, 7) == SQLITE_INTEGER);
-        pkm->spec_atk = sqlite3_column_int(current_stmt, 7);       
+        pkm.phys_atk = sqlite3_column_int(current_stmt, 6);       
 
+        assert(sqlite3_column_type(current_stmt, 7) == SQLITE_INTEGER);
+        pkm.phys_def = sqlite3_column_int(current_stmt, 7);
+    
         assert(sqlite3_column_type(current_stmt, 8) == SQLITE_INTEGER);
-        pkm->spec_def = sqlite3_column_int(current_stmt, 8);       
+        pkm.spec_atk = sqlite3_column_int(current_stmt, 8);       
 
         assert(sqlite3_column_type(current_stmt, 9) == SQLITE_INTEGER);
-        pkm->speed = sqlite3_column_int(current_stmt, 9);       
+        pkm.spec_def = sqlite3_column_int(current_stmt, 9);       
 
-        return pkm;
+        assert(sqlite3_column_type(current_stmt, 10) == SQLITE_INTEGER);
+        pkm.speed = sqlite3_column_int(current_stmt, 10);       
+
+        return std::make_pair(pkm, true);
     }
     default:
         throw std::runtime_error{ "Unexpected return code from database" };
@@ -137,7 +206,7 @@ std::shared_ptr<pokelib::Pokemon> pokelib::Database::fetch_request()
        
 }
 
-pokelib::PokemonType pokelib::Database::get_type_from_name(const char* name)
+pokelib::PokemonType pokelib::PokeDex::get_type_from_name(const char* name)
 {
     std::string query = fmt::format(R"(
         SELECT type_id
@@ -166,7 +235,7 @@ pokelib::PokemonType pokelib::Database::get_type_from_name(const char* name)
     }
 }
 
-std::string pokelib::Database::get_type_name(pokelib::PokemonType type)
+std::string pokelib::PokeDex::get_type_name(pokelib::PokemonType type)
 {
     std::string query = fmt::format(R"(
         SELECT name_en

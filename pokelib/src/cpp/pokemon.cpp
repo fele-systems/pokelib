@@ -2,13 +2,13 @@
 #include <sstream>
 
 
-std::string std::to_string(const pokelib::Pokemon& pokemon)
+std::string std::to_string(const pokelib::DexPokemon& pokemon)
 {
     std::stringstream ss;
-    ss << "Pokemon {\n"
+    ss << "DexPokemon {\n"
         << '\t' << pokemon.name << ",\n"
-        << '\t' << pokemon.types <<  ",\n"
-        << '\t' << pokemon.total_stats << ",\n"
+        << '\t' << pokemon.ptype <<  ",\n"
+        << '\t' << pokemon.stype <<  ",\n"
         << '\t' << pokemon.total_hp << ",\n"
         << '\t' << pokemon.phys_atk << ",\n"
         << '\t' << pokemon.phys_def << ",\n"

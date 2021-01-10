@@ -4,6 +4,17 @@
 #include <iostream>
 #include <cxxopts.hpp>
 
+std::unique_ptr<pokelib::PokeDex> load(const std::string& dbfile)
+{
+    auto database = std::make_unique<pokelib::PokeDex> ( dbfile );
+    if (!database->good())
+    {
+        std::cout << database->get_error() << std::endl;
+        return nullptr;
+    }
+    return database;
+}
+
 int main(int argc, char** argv)
 {
     using namespace pokelib;
@@ -19,71 +30,66 @@ int main(int argc, char** argv)
         ("INPUT", "Positional arguments: values used depending on the requested operation",
             cxxopts::value<std::vector<std::string>>())
         ;
+    try
+    {
+        options.parse_positional({ "INPUT" });
+        auto result = options.parse(argc, argv);
+        auto dbfile = result["database"].as<std::string>();
 
-    options.parse_positional({ "INPUT" });
-    auto result = options.parse(argc, argv);
-    PokemonRequest::Condition condition;
-    if (!result.count("INPUT"))
-    {
-        std::cout << "Missing input values" << std::endl;
-        return EXIT_FAILURE;
-    }
-    auto input = result["INPUT"].as<std::vector<std::string>>();
-
-    if (result.count("help"))
-    {
-        std::cout << options.help() << std::endl;
-        return EXIT_SUCCESS;
-    }
-    else if (result.count("name"))
-    {
-        condition.field = PokemonField::name;
-        condition.op = PokemonFieldOperator::equals;
-        condition.value = input[0];
-    }
-    else if (result.count("fuzzy"))
-    {
-        condition.field = PokemonField::name;
-        condition.op = PokemonFieldOperator::contains;
-        condition.value = input[0];
-    }
-    else if (result.count("type"))
-    {
-        pokelib::Database database{ result["database"].as<std::string>() };
-        if (!database.good())
+        if (!result.count("INPUT"))
         {
-            std::cout << database.get_error() << std::endl;
+            std::cout << "Missing input values" << std::endl;
             return EXIT_FAILURE;
         }
-        auto atk = database.get_type_from_name(input[0].c_str());
-        auto def = database.get_type_from_name(input[1].c_str());
-        
-        auto res = get_affinity(atk, def);
-        std::cout << res << std::endl;
-        return EXIT_SUCCESS;
-    }
-    else
-    {
-        std::cout << "Must use at least one of --name or --fuzzy" << std::endl;
-        std::cout << options.help() << std::endl;
-        return EXIT_FAILURE;
-    }
-    
-    pokelib::Database database{ result["database"].as<std::string>() };
-    if (!database.good())
-    {
-        std::cout << database.get_error() << std::endl;
-        return EXIT_FAILURE;
-    }
+        auto input = result["INPUT"].as<std::vector<std::string>>();
 
-    database.request(PokemonRequest()
-        .add_condition(condition));
-
-    auto pkm = database.fetch_request();
-    while (pkm != nullptr)
+        if (result.count("help"))
+        {
+            std::cout << options.help() << std::endl;
+            return EXIT_SUCCESS;
+        }
+        else if (result.count("name"))
+        {
+            if (input.size() != 1)
+                throw std::runtime_error { "--name should take only 1 parameter" };
+            auto db = load(dbfile);
+            auto pokemon = db->pokemon(input[0]);
+            std::cout << std::to_string(pokemon) << std::endl;
+        }
+        else if (result.count("fuzzy"))
+        {
+            if (input.size() != 1)
+                throw std::runtime_error { "--fuzzy should take only 1 parameter" };
+            auto db = load(dbfile);
+            auto pokemons = db->search_pokemon(input[0], Field::all);
+            for (auto& pokemon : pokemons)
+            {
+                std::cout << std::to_string(pokemon) << std::endl;
+            }
+        }
+        else if (result.count("type"))
+        {
+            if (input.size() != 2)
+                throw std::runtime_error { "--type should take only 1 parameter" };
+            auto db = load(dbfile);
+            auto atk = db->get_type_from_name(input[0].c_str());
+            auto def = db->get_type_from_name(input[1].c_str());
+            
+            auto res = get_affinity(atk, def);
+            std::cout << res << std::endl;
+            return EXIT_SUCCESS;
+        }
+        else
+        {
+            std::cout << "Must use at least one of --name or --fuzzy" << std::endl;
+            std::cout << options.help() << std::endl;
+            return EXIT_FAILURE;
+        }
+    }
+    catch (std::runtime_error& e)
     {
-        std::cout << std::to_string(*pkm) << std::endl;
-        pkm = database.fetch_request();
+        std::cout << e.what() << std::endl;
+        return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;

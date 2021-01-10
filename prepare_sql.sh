@@ -8,12 +8,12 @@ fi
 
 # Remove any previous files
 rm *.csv
-[ -d sql ] && rm -r sql
+[ -d sql ] && rm -rf sql
 mkdir sql
 cp pokelib/sql/table_definition.sql sql/00-table_definition.sql
 cp pokelib/sql/inserts/PokemonType.sql sql/01-pokemon_type.sql
 
-pokeimporter/importer.py --limit 10
+pokeimporter/importer.py
 
 [ -f pokemon_pokedex_entries.csv ] || { echo "Could not locate pokemon_pokedex_entries.csv file"; exit 1; }
 [ -f pokemon.csv ] || { echo "Could not locate pokemon.csv file"; exit 1; }

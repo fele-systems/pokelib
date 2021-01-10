@@ -57,7 +57,7 @@ CREATE TABLE TmpPokemon (
     spec_def        INTEGER,
     speed           INTEGER
 ); 
-.import 03-pokemon.sql Pokemon
+.read 03-pokemon.sql
 
 CREATE TABLE PokeDexEntries (
     entry_id    PRIMARY KEY ASC,
