@@ -55,7 +55,7 @@ pokelib::DexPokemon pokelib::PokeDex::pokemon(const std::string& name)
         << "WHERE name = '" << name << "'";
     std::string query_str = ss.str();
     
-    if (sqlite3_prepare_v2(sqlite, query_str.c_str(), query_str.size(), &current_stmt, nullptr) != SQLITE_OK)
+    if (sqlite3_prepare_v2(sqlite, query_str.c_str(), (int) query_str.size(), &current_stmt, nullptr) != SQLITE_OK)
     {
         throw std::runtime_error{ sqlite3_errmsg(sqlite) };
     }
@@ -135,7 +135,7 @@ std::vector<pokelib::DexPokemon> pokelib::PokeDex::search_pokemon(std::string va
     std::string query_str = ss.str();
     std::cout << query_str << std::endl;
     
-    if (sqlite3_prepare_v2(sqlite, query_str.c_str(), query_str.size(), &current_stmt, nullptr) != SQLITE_OK)
+    if (sqlite3_prepare_v2(sqlite, query_str.c_str(), (int) query_str.size(), &current_stmt, nullptr) != SQLITE_OK)
     {
         throw std::runtime_error{ sqlite3_errmsg(sqlite) };
     }
@@ -214,7 +214,7 @@ pokelib::PokemonType pokelib::PokeDex::get_type_from_name(const char* name)
         WHERE LOWER(name_en) = LOWER('{}');)", name);
     std::cout << "Query: " << query << std::endl;
     
-    if (sqlite3_prepare_v2(sqlite, query.data(), query.size(), &current_stmt, nullptr) != SQLITE_OK)
+    if (sqlite3_prepare_v2(sqlite, query.data(), (int) query.size(), &current_stmt, nullptr) != SQLITE_OK)
     {
         throw std::runtime_error{ sqlite3_errmsg(sqlite) };
     }
@@ -243,7 +243,7 @@ std::string pokelib::PokeDex::get_type_name(pokelib::PokemonType type)
         WHERE type_id = {};)", static_cast<int>(type));
     std::cout << "Query: " << query << std::endl;
     
-    if (sqlite3_prepare_v2(sqlite, query.data(), query.size(), &current_stmt, nullptr) != SQLITE_OK)
+    if (sqlite3_prepare_v2(sqlite, query.data(), (int) query.size(), &current_stmt, nullptr) != SQLITE_OK)
     {
         throw std::runtime_error{ sqlite3_errmsg(sqlite) };
     }

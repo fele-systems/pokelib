@@ -4,6 +4,15 @@
 #include <iostream>
 #include <cxxopts.hpp>
 
+#ifdef __WIN32__
+#define OS_WINDOWS
+#elif _MSC_VER
+#define OS_WINDOWS
+#include <Windows.h>
+#else
+#define OS_UNIX
+#endif
+
 std::unique_ptr<pokelib::PokeDex> load(const std::string& dbfile)
 {
     auto database = std::make_unique<pokelib::PokeDex> ( dbfile );
@@ -17,6 +26,10 @@ std::unique_ptr<pokelib::PokeDex> load(const std::string& dbfile)
 
 int main(int argc, char** argv)
 {
+#ifdef OS_WINDOWS
+    SetConsoleOutputCP(65001);
+#endif
+
     using namespace pokelib;
     cxxopts::Options options("Pokedex-cli", "Command-line pokémon tools");
 
@@ -36,19 +49,21 @@ int main(int argc, char** argv)
         auto result = options.parse(argc, argv);
         auto dbfile = result["database"].as<std::string>();
 
-        if (!result.count("INPUT"))
-        {
-            std::cout << "Missing input values" << std::endl;
-            return EXIT_FAILURE;
-        }
-        auto input = result["INPUT"].as<std::vector<std::string>>();
-
         if (result.count("help"))
         {
             std::cout << options.help() << std::endl;
             return EXIT_SUCCESS;
         }
-        else if (result.count("name"))
+
+        if (!result.count("INPUT"))
+        {
+            std::cout << "Missing input values" << std::endl;
+            std::cout << options.help() << std::endl;
+            return EXIT_FAILURE;
+        }
+        auto input = result["INPUT"].as<std::vector<std::string>>();
+
+        if (result.count("name"))
         {
             if (input.size() != 1)
                 throw std::runtime_error { "--name should take only 1 parameter" };

@@ -6,7 +6,15 @@ message(STATUS ${SOURCES})
 
 add_library(pokelib ${SOURCES})
 
-target_link_libraries(pokelib -lsqlite3 -lfmt)
+if (MSVC)
+    find_package(unofficial-sqlite3 CONFIG REQUIRED)
+    target_link_libraries(pokelib PRIVATE unofficial::sqlite3::sqlite3)
+
+    find_package(fmt 7.1.3 CONFIG REQUIRED)
+    target_link_libraries(pokelib PRIVATE fmt::fmt)
+else ()
+    target_link_libraries(pokelib -lsqlite3 -lfmt)
+endif (MSVC)
 
 target_include_directories(pokelib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

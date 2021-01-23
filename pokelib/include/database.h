@@ -53,7 +53,7 @@ namespace pokelib
         std::pair<DexPokemon, bool> next_pokemon_from_statement();
     private:
         sqlite3* sqlite;
-        bool open_code = -1;
+        int open_code = -1;
         sqlite3_stmt* current_stmt = nullptr;
     };
 
