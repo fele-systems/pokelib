@@ -27,9 +27,9 @@ std::unique_ptr<pokelib::PokeDex> load(const std::string& dbfile)
 int main(int argc, char** argv)
 {
 #ifdef OS_WINDOWS
-    SetConsoleOutputCP(65001);
+    SetConsoleOutputCP(CP_UTF8);
 #endif
-
+    
     using namespace pokelib;
     cxxopts::Options options("Pokedex-cli", "Command-line pokémon tools");
 
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
             auto def = db->get_type_from_name(input[1].c_str());
             
             auto res = get_affinity(atk, def);
-            std::cout << res << std::endl;
+            std::cout << affinity_str[res] << std::endl;
             return EXIT_SUCCESS;
         }
         else

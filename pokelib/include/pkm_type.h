@@ -59,10 +59,17 @@ namespace pokelib
 
     inline int get_affinity(PokemonType attacker, PokemonType defender)
     {
-        const auto x = static_cast<int>(attacker);
-        const auto y = static_cast<int>(defender);
+        const auto y = static_cast<int>(attacker);
+        const auto x = static_cast<int>(defender);
         return affinity_chart[x + y * affinity_chart_width];
     }
+
+    static constexpr std::array<const char*, 4> affinity_str = {
+        "no effect",
+        "not very effective",
+        "effective",
+        "super effective"
+    };
 
     // inline PokemonType operator~ (PokemonType a) { return (PokemonType)~(int)a; }
     inline PokemonType operator| (PokemonType a, PokemonType b) { return (PokemonType)((int)a | (int)b); }
