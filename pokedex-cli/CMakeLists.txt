@@ -15,4 +15,6 @@ target_compile_options(pokelib PRIVATE
   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Werror>
 )
 
-
+add_custom_command(TARGET pokedex-cli POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy
+		   ${CMAKE_SOURCE_DIR}/pokelib.db $<TARGET_FILE_DIR:pokedex-cli>)

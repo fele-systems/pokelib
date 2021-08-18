@@ -181,7 +181,7 @@ int main(int argc, char** argv)
     cxxopts::Options options("Pokedex-cli", "Command-line pokémon tools");
 
     options.add_options()
-        ("d,database", "Specify the database location", cxxopts::value<std::string>()->default_value("pokemon.db"))
+        ("d,database", "Specify the database location", cxxopts::value<std::string>()->default_value("pokelib.db"))
         ("v,verbose", "Enable verbose logging")
         ("n,name", "Search by a pokémon full name")
         ("f,fuzzy", "Search by name or type using fuzzy searching")
