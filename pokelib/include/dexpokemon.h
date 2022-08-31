@@ -3,18 +3,26 @@
 #define POKEMON_H
 
 #include <string>
+#include <pkm_type.h>
+#include <entity.h>
 
 namespace pokelib
 {
     struct DexPokemon
     {
+    public:
+        using Entity = entity::EntityModel<DexPokemon>;
+        static void to_entity(Entity& e, const DexPokemon& p);
+        static void from_entity(const Entity& e, DexPokemon& p);
+        
+    public:
         uint32_t pkm_id;
 
         uint32_t national_dex_no;
         std::string name;
 
-        std::string ptype;
-        std::string stype;
+        PokemonType ptype;
+        PokemonType stype;
 
         uint32_t total_hp;
         uint32_t phys_atk;
@@ -23,6 +31,7 @@ namespace pokelib
         uint32_t spec_def;
         uint32_t speed;
     };
+    
 
     struct BattlePokemon
     {

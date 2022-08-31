@@ -8,6 +8,7 @@
 #include <cstring>
 #include <sstream>
 #include <fmt/core.h>
+#include <algorithm>
 
 pokelib::PokeDex::PokeDex(const std::string& filename)
 {
@@ -38,26 +39,19 @@ std::string pokelib::PokeDex::get_error() const
 
 pokelib::DexPokemon pokelib::PokeDex::pokemon(const std::string& name)
 {
-    std::stringstream ss;
-    ss << R"(SELECT pkm.pkm_id,
-                    pkm.national_dex_no,
-                    pkm.name,
-                    type1.name_en,
-                    type2.name_en,
-                    pkm.total_hp,
-                    pkm.phys_atk,
-                    pkm.phys_def,
-                    pkm.spec_atk,
-                    pkm.spec_def,
-                    pkm.speed
-            FROM Pokemon pkm INNER JOIN PokemonType type1 ON pkm.ptype = type1.type_id
-                             LEFT  JOIN PokemonType type2 ON pkm.stype = type2.type_id  )"
-        << "WHERE name = '" << name << "'";
-    std::string query_str = ss.str();
+    const std::string query_str = entity::find_by<pokelib::DexPokemon>("Pokemon", "name", name);;
     
+    //std::cout << query_str << std::endl;
+
     if (sqlite3_prepare_v2(sqlite, query_str.c_str(), (int) query_str.size(), &current_stmt, nullptr) != SQLITE_OK)
     {
         throw std::runtime_error{ sqlite3_errmsg(sqlite) };
+    }
+
+    auto results = entity::fetch_from_statement<DexPokemon>(current_stmt);
+    if (results.empty())
+    {
+        throw std::runtime_error{ "No pokémon was found with requested name" };
     }
 
     auto result = next_pokemon_from_statement();
@@ -67,7 +61,7 @@ pokelib::DexPokemon pokelib::PokeDex::pokemon(const std::string& name)
     }
     else
     {
-        throw std::runtime_error { "No pokémon was found with requested name" };
+        
     }
 }
 
@@ -161,42 +155,67 @@ std::pair<pokelib::DexPokemon, bool> pokelib::PokeDex::next_pokemon_from_stateme
     case SQLITE_ROW:
     {
         DexPokemon pkm;
+        DexPokemon::Entity entity;
 
-        assert(sqlite3_column_type(current_stmt, 0) == SQLITE_INTEGER);
-        pkm.pkm_id = sqlite3_column_int(current_stmt, 0);
-        
-        assert(sqlite3_column_type(current_stmt, 1) == SQLITE_INTEGER);
-        pkm.national_dex_no = sqlite3_column_int(current_stmt, 1);
-
-        assert(sqlite3_column_type(current_stmt, 2) == SQLITE_TEXT);
-        pkm.name = std::string{ (const char*) sqlite3_column_text(current_stmt, 2), (size_t) sqlite3_column_bytes(current_stmt, 2) };
-
-        assert(sqlite3_column_type(current_stmt, 3) == SQLITE_TEXT);
-        pkm.ptype = std::string{ (const char*) sqlite3_column_text(current_stmt, 3), (size_t) sqlite3_column_bytes(current_stmt, 3) };
-
-        if (sqlite3_column_type(current_stmt, 4) != SQLITE_NULL)
+        auto count = sqlite3_column_count(current_stmt);
+        for (int i = 0; i < count; i++)
         {
-            assert(sqlite3_column_type(current_stmt, 4) == SQLITE_TEXT);
-            pkm.stype = std::string{ (const char*) sqlite3_column_text(current_stmt, 4), (size_t) sqlite3_column_bytes(current_stmt, 4) };
+            const char* column_name = sqlite3_column_name(current_stmt, i);
+            auto& field = entity[column_name];
+            auto column_type = sqlite3_column_type(current_stmt, i);
+            if (column_type == SQLITE_INTEGER)
+            {
+                field.set_from(static_cast<uint32_t>(sqlite3_column_int(current_stmt, i)));
+            }
+            else if (column_type == SQLITE_TEXT)
+            {
+                auto size = static_cast<size_t>(sqlite3_column_bytes(current_stmt, i));
+                auto chars = reinterpret_cast<const char*>(sqlite3_column_text(current_stmt, i));
+                field.set_from( std::string{ chars, size } );
+            }
+            else
+            {
+                throw std::runtime_error{ field.field_name + ": Unknown type" };
+            }
         }
+        std::cout << std::to_string(entity);
+        DexPokemon::from_entity(entity, pkm);
 
-        assert(sqlite3_column_type(current_stmt, 5) == SQLITE_INTEGER);
-        pkm.total_hp = sqlite3_column_int(current_stmt, 5);       
-
-        assert(sqlite3_column_type(current_stmt, 6) == SQLITE_INTEGER);
-        pkm.phys_atk = sqlite3_column_int(current_stmt, 6);       
-
-        assert(sqlite3_column_type(current_stmt, 7) == SQLITE_INTEGER);
-        pkm.phys_def = sqlite3_column_int(current_stmt, 7);
-    
-        assert(sqlite3_column_type(current_stmt, 8) == SQLITE_INTEGER);
-        pkm.spec_atk = sqlite3_column_int(current_stmt, 8);       
-
-        assert(sqlite3_column_type(current_stmt, 9) == SQLITE_INTEGER);
-        pkm.spec_def = sqlite3_column_int(current_stmt, 9);       
-
-        assert(sqlite3_column_type(current_stmt, 10) == SQLITE_INTEGER);
-        pkm.speed = sqlite3_column_int(current_stmt, 10);       
+        //assert(sqlite3_column_type(current_stmt, 0) == SQLITE_INTEGER);
+        //pkm.pkm_id = sqlite3_column_int(current_stmt, 0);
+        //
+        //assert(sqlite3_column_type(current_stmt, 1) == SQLITE_INTEGER);
+        //pkm.national_dex_no = sqlite3_column_int(current_stmt, 1);
+        //
+        //assert(sqlite3_column_type(current_stmt, 2) == SQLITE_TEXT);
+        //pkm.name = std::string{ (const char*) sqlite3_column_text(current_stmt, 2), (size_t) sqlite3_column_bytes(current_stmt, 2) };
+        //
+        //assert(sqlite3_column_type(current_stmt, 3) == SQLITE_TEXT);
+        ////pkm.ptype = std::string{ (const char*) sqlite3_column_text(current_stmt, 3), (size_t) sqlite3_column_bytes(current_stmt, 3) };
+        //
+        //if (sqlite3_column_type(current_stmt, 4) != SQLITE_NULL)
+        //{
+        //    assert(sqlite3_column_type(current_stmt, 4) == SQLITE_TEXT);
+        //    //pkm.stype = std::string{ (const char*) sqlite3_column_text(current_stmt, 4), (size_t) sqlite3_column_bytes(current_stmt, 4) };
+        //}
+        //
+        //assert(sqlite3_column_type(current_stmt, 5) == SQLITE_INTEGER);
+        //pkm.total_hp = sqlite3_column_int(current_stmt, 5);       
+        //
+        //assert(sqlite3_column_type(current_stmt, 6) == SQLITE_INTEGER);
+        //pkm.phys_atk = sqlite3_column_int(current_stmt, 6);       
+        //
+        //assert(sqlite3_column_type(current_stmt, 7) == SQLITE_INTEGER);
+        //pkm.phys_def = sqlite3_column_int(current_stmt, 7);
+        //
+        //assert(sqlite3_column_type(current_stmt, 8) == SQLITE_INTEGER);
+        //pkm.spec_atk = sqlite3_column_int(current_stmt, 8);       
+        //
+        //assert(sqlite3_column_type(current_stmt, 9) == SQLITE_INTEGER);
+        //pkm.spec_def = sqlite3_column_int(current_stmt, 9);       
+        //
+        //assert(sqlite3_column_type(current_stmt, 10) == SQLITE_INTEGER);
+        //pkm.speed = sqlite3_column_int(current_stmt, 10);       
 
         return std::make_pair(pkm, true);
     }
@@ -208,6 +227,7 @@ std::pair<pokelib::DexPokemon, bool> pokelib::PokeDex::next_pokemon_from_stateme
 
 pokelib::PokemonType pokelib::PokeDex::get_type_from_name(const char* name)
 {
+    
     std::string query = fmt::format(R"(
         SELECT type_id
         FROM PokemonType

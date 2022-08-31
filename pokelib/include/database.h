@@ -5,7 +5,7 @@
 #include <iostream>
 #include <memory>
 #include <sqlite3.h>
-#include <pokemon.h>
+#include <dexpokemon.h>
 #include <stdexcept>
 #include <pkm_type.h>
 #include <vector>

@@ -3,6 +3,8 @@
 #define PKM_PokemonTypeYPE_H
 
 #include <array>
+#include <string>
+#include <entity.h>
 
 namespace pokelib
 {
@@ -25,7 +27,8 @@ namespace pokelib
         dragon      = 14,
         ghost       = 15,
         dark        = 16,
-        steel       = 17
+        steel       = 17,
+        count       = 18
     };
 
     // The lines represents the offensive type and the columns the defensive type.
@@ -71,6 +74,27 @@ namespace pokelib
         "super effective"
     };
 
+    static constexpr std::array<const char*, static_cast<size_t>(PokemonType::count)> types_str = {
+        "fairy",
+        "normal",
+        "fire",
+        "fighting",
+        "water",
+        "flying",
+        "grass",
+        "poison",
+        "electric",
+        "ground",
+        "psychic",
+        "rock",
+        "ice",
+        "bug",
+        "dragon",
+        "ghost",
+        "dark",
+        "steel"
+    };
+
     // inline PokemonType operator~ (PokemonType a) { return (PokemonType)~(int)a; }
     inline PokemonType operator| (PokemonType a, PokemonType b) { return (PokemonType)((int)a | (int)b); }
     inline PokemonType operator& (PokemonType a, PokemonType b) { return (PokemonType)((int)a & (int)b); }
@@ -79,6 +103,32 @@ namespace pokelib
     inline PokemonType& operator&= (PokemonType& a, PokemonType b) { return (PokemonType&)((int&)a &= (int)b); }
     inline PokemonType& operator^= (PokemonType& a, PokemonType b) { return (PokemonType&)((int&)a ^= (int)b); }
     
+}
+
+namespace entity {
+    template <>
+    struct Converter<uint32_t, pokelib::PokemonType>
+    {
+        static constexpr bool enabled = true;
+        pokelib::PokemonType operator()(uint32_t f) const
+        {
+            return static_cast<pokelib::PokemonType>(f);
+        }
+    };
+
+    template <>
+    struct Converter<pokelib::PokemonType, uint32_t>
+    {
+        static constexpr bool enabled = true;
+        uint32_t operator()(pokelib::PokemonType f) const
+        {
+            return static_cast<uint32_t>(f);
+        }
+    };
+}
+
+namespace std {
+    string to_string(pokelib::PokemonType type);
 }
 
 #endif
