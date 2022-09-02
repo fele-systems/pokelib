@@ -5,16 +5,29 @@
 #include <string>
 #include <pkm_type.h>
 #include <entity.h>
+#include <entity_macro.h>
 
 namespace pokelib
 {
     struct DexPokemon
     {
     public:
-        using Entity = entity::EntityModel<DexPokemon>;
-        static void to_entity(Entity& e, const DexPokemon& p);
-        static void from_entity(const Entity& e, DexPokemon& p);
-        
+        using Entity = entity::EntitySketch<DexPokemon>;
+        //static void to_entity(Entity& e, const DexPokemon& p);
+        //static void from_entity(const Entity& e, DexPokemon& p);
+        ENTITY_DEFINE_TYPE(DexPokemon,
+            pkm_id,
+            national_dex_no,
+            name,
+            ptype,
+            stype,
+            total_hp,
+            phys_atk,
+            phys_def,
+            spec_atk,
+            spec_def,
+            speed
+        )
     public:
         uint32_t pkm_id;
 

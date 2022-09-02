@@ -1,7 +1,6 @@
 project(pokedex-cli)
 # Get all source files in src
-file(GLOB SOURCES "src/*")
-add_executable(pokedex-cli ${SOURCES})
+add_executable(pokedex-cli src/main.cpp)
 
 target_link_libraries(pokedex-cli pokelib)
 message(STATUS "Caminho do include: ")

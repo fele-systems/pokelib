@@ -1,5 +1,7 @@
 
 #include <database.h>
+#include <dexpokemontype.h>
+
 #include <iostream>
 #include <vector>
 #include <cassert>
@@ -9,6 +11,7 @@
 #include <sstream>
 #include <fmt/core.h>
 #include <algorithm>
+
 
 pokelib::PokeDex::PokeDex(const std::string& filename)
 {
@@ -53,16 +56,7 @@ pokelib::DexPokemon pokelib::PokeDex::pokemon(const std::string& name)
     {
         throw std::runtime_error{ "No pokémon was found with requested name" };
     }
-
-    auto result = next_pokemon_from_statement();
-    if (result.second)
-    {
-        return result.first;
-    }
-    else
-    {
-        
-    }
+    return results[0];
 }
 
 std::vector<pokelib::DexPokemon> pokelib::PokeDex::search_pokemon(std::string value, Field fields)
@@ -225,34 +219,23 @@ std::pair<pokelib::DexPokemon, bool> pokelib::PokeDex::next_pokemon_from_stateme
        
 }
 
-pokelib::PokemonType pokelib::PokeDex::get_type_from_name(const char* name)
+pokelib::DexPokemonType pokelib::PokeDex::get_type_from_name(const char* name)
 {
-    
-    std::string query = fmt::format(R"(
-        SELECT type_id
-        FROM PokemonType
-        WHERE LOWER(name_en) = LOWER('{}');)", name);
-    std::cout << "Query: " << query << std::endl;
-    
+    const std::string query = entity::find_by<DexPokemonType>("PokemonType", "name_en", name);
+
     if (sqlite3_prepare_v2(sqlite, query.data(), (int) query.size(), &current_stmt, nullptr) != SQLITE_OK)
     {
         throw std::runtime_error{ sqlite3_errmsg(sqlite) };
     }
-    
-    auto rc = sqlite3_step(current_stmt);
-    if (rc == SQLITE_ROW)
-    {
-        assert(sqlite3_column_type(current_stmt, 0) == SQLITE_INTEGER);
-        return static_cast<PokemonType>( sqlite3_column_int(current_stmt, 0) );
-    }
-    else if (rc == SQLITE_DONE)
+
+    auto results = entity::fetch_from_statement<DexPokemonType>(current_stmt);
+
+    if (results.empty())
     {
         throw std::runtime_error { "The requested type does not exists" };
     }
-    else
-    {
-        throw std::runtime_error{ "Unexpected return code from database" };
-    }
+
+    return results[0];
 }
 
 std::string pokelib::PokeDex::get_type_name(pokelib::PokemonType type)

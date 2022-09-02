@@ -107,22 +107,18 @@ namespace pokelib
 
 namespace entity {
     template <>
-    struct Converter<uint32_t, pokelib::PokemonType>
-    {
-        static constexpr bool enabled = true;
-        pokelib::PokemonType operator()(uint32_t f) const
-        {
-            return static_cast<pokelib::PokemonType>(f);
-        }
-    };
-
-    template <>
     struct Converter<pokelib::PokemonType, uint32_t>
     {
         static constexpr bool enabled = true;
-        uint32_t operator()(pokelib::PokemonType f) const
+
+        uint32_t serialize(pokelib::PokemonType u) const
         {
-            return static_cast<uint32_t>(f);
+            return static_cast<uint32_t>(u);
+        }
+
+        pokelib::PokemonType deserialize(uint32_t p) const
+        {
+            return static_cast<pokelib::PokemonType>(p);
         }
     };
 }

@@ -2,7 +2,7 @@ project(pokelib)
 
 message(STATUS ${SOURCES})
 
-add_library(pokelib "src/cpp/pokemon.cpp"
+add_library(pokelib "src/cpp/dexpokemon.cpp"
                     "src/cpp/database.cpp"
                     "src/cpp/queries.cpp"
                     "src/cpp/request.cpp"

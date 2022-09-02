@@ -2,10 +2,12 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
+#include <dexpokemontype.h>
+#include <dexpokemon.h>
+
 #include <iostream>
 #include <memory>
 #include <sqlite3.h>
-#include <dexpokemon.h>
 #include <stdexcept>
 #include <pkm_type.h>
 #include <vector>
@@ -45,7 +47,7 @@ namespace pokelib
         DexPokemon pokemon(const std::string& name);
         std::vector<DexPokemon> search_pokemon(std::string value, Field fields);
 
-        PokemonType get_type_from_name(const char* name);
+        DexPokemonType get_type_from_name(const char* name);
         std::string get_type_name(PokemonType type);
     
         void print_all_shit();
