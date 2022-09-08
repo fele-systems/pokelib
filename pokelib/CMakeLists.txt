@@ -3,7 +3,7 @@ project(pokelib)
 message(STATUS ${SOURCES})
 
 add_library(pokelib "src/cpp/dexpokemon.cpp"
-                    "src/cpp/database.cpp"
+                    "src/cpp/pokedex.cpp"
                     "src/cpp/queries.cpp"
                     "src/cpp/request.cpp"
                     "src/cpp/pkm_type.cpp"
@@ -17,7 +17,7 @@ if (MSVC)
     find_package(fmt 7.1.3 CONFIG REQUIRED)
     target_link_libraries(pokelib PRIVATE fmt::fmt)
 else ()
-    target_link_libraries(pokelib -lsqlite3 -lfmt)
+    target_link_libraries(pokelib -lsqlite3 -lfmt -lncurses)
 endif (MSVC)
 
 target_include_directories(pokelib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

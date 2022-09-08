@@ -45,18 +45,15 @@ namespace pokelib
         std::string get_error() const;
 
         DexPokemon pokemon(const std::string& name);
-        std::vector<DexPokemon> search_pokemon(std::string value, Field fields);
+        std::vector<DexPokemon> search_pokemon(const std::string& name);
 
         DexPokemonType get_type_from_name(const char* name);
         std::string get_type_name(PokemonType type);
     
         void print_all_shit();
     private:
-        std::pair<DexPokemon, bool> next_pokemon_from_statement();
-    private:
         sqlite3* sqlite;
         int open_code = -1;
-        sqlite3_stmt* current_stmt = nullptr;
     };
 
 //   template<typename RequestType>

@@ -1,9 +1,12 @@
+#include "dexpokemon.h"
 #include <queries.h>
-#include <database.h>
+#include <pokedex.h>
 #include <request.h>
 #include <iostream>
 #include <cxxopts.hpp>
 #include <entity.h>
+
+#include <ncurses.h>
 
 #ifdef __WIN32__
 #define OS_WINDOWS
@@ -25,11 +28,18 @@ std::unique_ptr<pokelib::PokeDex> load(const std::string& dbfile)
     return database;
 }
 
-namespace pokelib {
+int main(int argc, char** argv)
+{
+    initscr();
+    printw("Hello World!!!");
+    refresh();
+    getch();
+    endwin();
 
+    return 0;
 }
 
-int main(int argc, char** argv)
+int _main(int argc, char** argv)
 {
 
 
@@ -54,7 +64,11 @@ int main(int argc, char** argv)
     {
         options.parse_positional({ "INPUT" });
         auto result = options.parse(argc, argv);
+#ifdef DBPATH
+        auto dbfile = DBPATH;
+#else
         auto dbfile = result["database"].as<std::string>();
+#endif
 
         if (result.count("help"))
         {
@@ -76,17 +90,21 @@ int main(int argc, char** argv)
                 throw std::runtime_error { "--name should take only 1 parameter" };
             auto db = load(dbfile);
             auto pokemon = db->pokemon(input[0]);
-            std::cout << std::to_string(pokemon) << std::endl;
+            DexPokemon::Entity entity;
+            DexPokemon::to_entity(entity, pokemon);
+            std::cout << std::to_string(entity) << std::endl;
         }
         else if (result.count("fuzzy"))
         {
             if (input.size() != 1)
                 throw std::runtime_error { "--fuzzy should take only 1 parameter" };
             auto db = load(dbfile);
-            auto pokemons = db->search_pokemon(input[0], Field::all);
+            auto pokemons = db->search_pokemon(input[0]);
             for (auto& pokemon : pokemons)
             {
-                std::cout << std::to_string(pokemon) << std::endl;
+                DexPokemon::Entity entity;
+                DexPokemon::to_entity(entity, pokemon);
+                std::cout << std::to_string(entity) << std::endl;
             }
         }
         else if (result.count("type"))

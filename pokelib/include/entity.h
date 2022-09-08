@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <vector>
 #include <variant>
 #include <string>
@@ -66,9 +67,12 @@ namespace entity {
         template <typename T>
         requires EntityPrimitive<T> || EntityConvertibleType<T>
         void set_from(T value);
+
+        void set_null();
     public:
         std::string field_name;
         var_t value;
+        bool has_value = false;
     };
 
 
@@ -170,10 +174,17 @@ namespace entity {
         return fields;
     }
 
+    inline void EntityField::set_null()
+    {
+        has_value = false;
+    }
+
     template <typename T>
     requires EntityPrimitive<T> || EntityConvertibleType<T>
     inline void EntityField::get_to(T& out) const
     {
+        if(!has_value) return;
+
         if constexpr (std::is_convertible_v<T, var_t>)
         {
             out = std::get<T>(value);
@@ -197,6 +208,7 @@ namespace entity {
     requires EntityPrimitive<T> || EntityConvertibleType<T>
     inline void EntityField::set_from(T value)
     {
+        assert(!has_value);
         using Type = std::decay_t<T>;
         if constexpr (std::is_convertible_v<T, var_t>)
             this->value = std::move(value);
@@ -207,6 +219,23 @@ namespace entity {
         else
             []<bool flag = false>()
                 {static_assert(flag, "Non convertible type!");}();
+        has_value = true;
+    }
+    template<typename T>
+    std::string to_string(const entity::EntitySketch<T>& entity)
+    {
+        std::string str = fmt::format("{} [\n", TypeName<T>());
+
+        for (const auto& field : entity.get_fields())
+        {
+            str += "\t" + field.field_name + ": " + std::visit([](auto&& arg) -> std::string
+            {
+                if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::string>) return arg;
+                else return std::to_string(arg);
+            }, field.value) + '\n';
+        }
+
+        return str + ']';
     }
 
     template <typename T>
@@ -234,6 +263,10 @@ namespace entity {
                     auto chars = reinterpret_cast<const char*>(sqlite3_column_text(stmt, i));
                     field.set_from(std::string{ chars, size });
                 }
+                else if (column_type == SQLITE_NULL)
+                {
+                    field.set_null();
+                }
                 else
                 {
                     throw std::runtime_error{ field.field_name + ": Unknown type" };
@@ -258,19 +291,8 @@ namespace entity {
 
 namespace std {
     template<typename T>
-        std::string to_string(const entity::EntitySketch<T>& entity)
-        {
-            std::string str = fmt::format("{} [", TypeName<T>());
-
-            for (const auto& field : entity.get_fields())
-            {
-                str += "\t" + field.field_name + ": " + std::visit([](auto&& arg) -> std::string
-                        {
-                        if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, std::string>) return arg;
-                        else return std::to_string(arg);
-                        }, field.value) + '\n';
-            }
-
-            return str + ']';
-        }
+    std::string to_string(const entity::EntitySketch<T>& entity)
+    {
+     return entity::to_string(entity);
+    }
 }

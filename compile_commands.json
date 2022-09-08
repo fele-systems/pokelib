@@ -1,0 +1,37 @@
+[
+{
+  "directory": "/home/fele/Downloads/pokelib/build/pokelib",
+  "command": "/usr/bin/c++  -I/home/fele/Downloads/pokelib/pokelib/include -g -Wall -Wextra -pedantic -Werror -std=gnu++20 -o CMakeFiles/pokelib.dir/src/cpp/pokemon.cpp.o -c /home/fele/Downloads/pokelib/pokelib/src/cpp/pokemon.cpp",
+  "file": "/home/fele/Downloads/pokelib/pokelib/src/cpp/pokemon.cpp"
+},
+{
+  "directory": "/home/fele/Downloads/pokelib/build/pokelib",
+  "command": "/usr/bin/c++  -I/home/fele/Downloads/pokelib/pokelib/include -g -Wall -Wextra -pedantic -Werror -std=gnu++20 -o CMakeFiles/pokelib.dir/src/cpp/database.cpp.o -c /home/fele/Downloads/pokelib/pokelib/src/cpp/database.cpp",
+  "file": "/home/fele/Downloads/pokelib/pokelib/src/cpp/database.cpp"
+},
+{
+  "directory": "/home/fele/Downloads/pokelib/build/pokelib",
+  "command": "/usr/bin/c++  -I/home/fele/Downloads/pokelib/pokelib/include -g -Wall -Wextra -pedantic -Werror -std=gnu++20 -o CMakeFiles/pokelib.dir/src/cpp/queries.cpp.o -c /home/fele/Downloads/pokelib/pokelib/src/cpp/queries.cpp",
+  "file": "/home/fele/Downloads/pokelib/pokelib/src/cpp/queries.cpp"
+},
+{
+  "directory": "/home/fele/Downloads/pokelib/build/pokelib",
+  "command": "/usr/bin/c++  -I/home/fele/Downloads/pokelib/pokelib/include -g -Wall -Wextra -pedantic -Werror -std=gnu++20 -o CMakeFiles/pokelib.dir/src/cpp/request.cpp.o -c /home/fele/Downloads/pokelib/pokelib/src/cpp/request.cpp",
+  "file": "/home/fele/Downloads/pokelib/pokelib/src/cpp/request.cpp"
+},
+{
+  "directory": "/home/fele/Downloads/pokelib/build/pokelib",
+  "command": "/usr/bin/c++  -I/home/fele/Downloads/pokelib/pokelib/include -g -Wall -Wextra -pedantic -Werror -std=gnu++20 -o CMakeFiles/pokelib.dir/src/cpp/pkm_type.cpp.o -c /home/fele/Downloads/pokelib/pokelib/src/cpp/pkm_type.cpp",
+  "file": "/home/fele/Downloads/pokelib/pokelib/src/cpp/pkm_type.cpp"
+},
+{
+  "directory": "/home/fele/Downloads/pokelib/build/pokelib",
+  "command": "/usr/bin/c++  -I/home/fele/Downloads/pokelib/pokelib/include -g -Wall -Wextra -pedantic -Werror -std=gnu++20 -o CMakeFiles/pokelib.dir/src/cpp/dexpokemontype.cpp.o -c /home/fele/Downloads/pokelib/pokelib/src/cpp/dexpokemontype.cpp",
+  "file": "/home/fele/Downloads/pokelib/pokelib/src/cpp/dexpokemontype.cpp"
+},
+{
+  "directory": "/home/fele/Downloads/pokelib/build/pokedex-cli",
+  "command": "/usr/bin/c++  -I/home/fele/Downloads/pokelib/pokedex-cli/include -I/home/fele/Downloads/pokelib/pokelib/include -I/home/fele/Downloads/pokelib/pokedex-cli/third-party/cxxopts/include -g -std=gnu++20 -o CMakeFiles/pokedex-cli.dir/src/main.cpp.o -c /home/fele/Downloads/pokelib/pokedex-cli/src/main.cpp",
+  "file": "/home/fele/Downloads/pokelib/pokedex-cli/src/main.cpp"
+}
+]
